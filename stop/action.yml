@@ -1,0 +1,41 @@
+name: 'GCP-Stop-Simple-Proxy'
+description: 'Stop Running the simple-proxy instance on Google Cloud Platform'
+author: 'RamSeraph'
+
+inputs:
+  gcp-zone:
+    description: 'GCP zone where proxy is running'
+    required: true
+  gcp-project:
+    description: 'GCP project to use'
+    required: true
+  gcp-credentials:
+    description: 'GCP credentials'
+    required: true
+  gcp-instance-name:
+    description: 'GCP instance name'
+    required: true
+
+runs:
+  using: "composite"
+  steps: 
+    - name: Authenticate with GCP
+      shell: bash
+      run: |
+        gcloud auth activate-service-account --key-file=<(echo ${{ inputs.gcp-credentials }} | base64 -d)
+
+    - name: Stop
+      shell: bash
+      run: |
+        instance_name="${{ inputs.gcp-instance-name }}"
+        project="${{ inputs.gcp-project }}"
+        zone="${{ inputs.gcp-zone }}"
+
+        gcloud compute instances stop $instance_name \
+            --project=$project \
+            --zone=$zone
+        
+        gcloud compute instances delete $instance_name \
+            --project=$project \
+            --zone=$zone
+

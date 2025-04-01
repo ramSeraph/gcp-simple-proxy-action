@@ -1,0 +1,106 @@
+name: 'GCP-Run-Simple-Proxy'
+description: 'Run a simple-proxy instance on Google Cloud Platform'
+author: 'RamSeraph'
+
+inputs:
+  gcp-zone:
+    description: 'GCP zone to run proxy in'
+    required: false
+    default: 'asia-south1-a'
+  gcp-machine-type:
+    description: 'Machine type'
+    required: false
+    default: 'e2-micro'
+  gcp-project:
+    description: 'GCP project to use'
+    required: true
+  gcp-credentials:
+    description: 'GCP credentials'
+    required: true
+  simpleproxy-port:
+    description: 'port to use for simple proxy'
+    required: false
+    default: 80
+  simpleproxy-version:
+    description: 'simple proxy version to use'
+    required: false
+    default: '1.2.0'
+
+outputs:
+  proxy-url:
+    description: 'ip address of the socks proxy'
+    value: ${{ steps.start-proxy.outputs.ip_address }}
+
+runs:
+  using: "composite"
+  steps: 
+    - name: Authenticate with GCP
+      shell: bash
+      run: |
+        gcloud auth activate-service-account --key-file=<(echo ${{ inputs.gcp-credentials }} | base64 -d)
+
+    - name: Start Proxy
+      id: start-proxy
+      shell: bash
+      run: |
+        date_str=$(date +%s)
+        instance_name="proxy-instance-$date_str"
+        echo "instance_name=$instance_name" >> $GITHUB_OUTPUT 
+
+        zone="${{ inputs.gcp-zone }}"
+        project="${{ inputs.gcp-project }}"
+        machine_type="${{ inputs.gcp-machine-type }}"
+
+        proxy_version="${{ inputs.simpleproxy-version }}"
+        proxy_port="${{ inputs.simpleproxy-port }}"
+
+        sed -e "s/<VERSION>/$proxy_version/g" -e "s/<PORT>/$proxy_port/g" ${GITHUB_ACTION_PATH}/startup.sh.tmpl > startup.sh 
+
+        gcloud compute instances create $instance_name\
+            --project=$project \
+            --zone=$zone\
+            --machine-type=$machine_type \
+            --network-interface=network-tier=PREMIUM,stack-type=IPV4_ONLY,subnet=default \
+            --no-restart-on-failure \
+            --maintenance-policy=TERMINATE \
+            --provisioning-model=SPOT \
+            --instance-termination-action=DELETE \
+            --max-run-duration=86400s \
+            --tags=http-server \
+            --create-disk=auto-delete=yes,boot=yes,device-name=$instance_name,image=projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20250213,mode=rw,size=10,type=pd-balanced \
+            --no-shielded-secure-boot \
+            --shielded-vtpm \
+            --shielded-integrity-monitoring \
+            --labels=goog-ec-src=vm_add-gcloud \
+            --reservation-affinity=any \
+            --metadata-from-file startup-script=startup.sh
+
+        ip_address=$(gcloud compute instances describe $instance_name --project $project --zone $zone --format='json' | jq -r '.networkInterfaces[0].accessConfigs[0].natIP')
+        echo "ip_address=$ip_address" >> $GITHUB_OUTPUT 
+
+        [[ $ip_address != "" ]] || exit 1
+
+    - name: Wait For Proxy
+      shell: bash
+      run: |
+        ip_address="${{ steps.start-proxy.outputs.ip_address }}"
+        port="${{ inputs.simpleproxy-port }}"
+
+        counter=0
+        maxRetry=50
+        while true; do
+          if (( $counter == $maxRetry )) ; then
+            echo "Reached the retry upper limit $counter"
+            exit 1
+          fi
+          if nc -z $ip_address $port; then
+            echo "The machine is UP !!!"
+            exit 0
+          else
+            echo "sleeping to check again if machine started $counter"
+            counter=$((counter + 1))
+            sleep 5
+          fi
+        done
+
+
