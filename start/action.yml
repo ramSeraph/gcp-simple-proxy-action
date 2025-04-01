@@ -5,8 +5,7 @@ author: 'RamSeraph'
 inputs:
   gcp-zone:
     description: 'GCP zone to run proxy in'
-    required: false
-    default: 'asia-south1-a'
+    required: required
   gcp-machine-type:
     description: 'Machine type'
     required: false
