@@ -24,11 +24,23 @@ inputs:
     description: 'simple proxy version to use'
     required: false
     default: '1.2.0'
+  proxy-check-retry-delay:
+    description: 'retry delay while checking proxy status'
+    required: false
+    default: 5
+  proxy-check-max-retries:
+    description: 'number of retries allowed while checking proxy status'
+    required: false
+    default: 50
 
 outputs:
-  proxy-url:
+  ip_address:
     description: 'ip address of the socks proxy'
     value: ${{ steps.start-proxy.outputs.ip_address }}
+  instance_name:
+    description: 'name of the gcp instance created'
+    value: ${{ steps.start-proxy.outputs.instance_name }}
+
 
 runs:
   using: "composite"
@@ -84,22 +96,25 @@ runs:
       run: |
         ip_address="${{ steps.start-proxy.outputs.ip_address }}"
         port="${{ inputs.simpleproxy-port }}"
+        retry_delay=${{ inputs.proxy-check-retry-delay }}
+        max_retries=${{ inputs.proxy-check-max-retries }}
 
         counter=0
-        maxRetry=50
         while true; do
-          if (( $counter == $maxRetry )) ; then
-            echo "Reached the retry upper limit $counter"
+          if (( $counter == $max_retries )) ; then
+            echo "Reached the retry upper limit of $counter attempts"
             exit 1
           fi
           if nc -z $ip_address $port; then
             echo "The machine is UP !!!"
             exit 0
           else
-            echo "sleeping to check again if machine started $counter"
+            echo "sleeping for $retry_delay to check again if machine started.. attempts: $counter"
             counter=$((counter + 1))
-            sleep 5
+            sleep $retry_delay
           fi
         done
+
+        exit 1
 
 
