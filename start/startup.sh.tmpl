@@ -20,7 +20,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/tmp
-ExecStart=/usr/bin/simple-proxy -port <PORT> -logtostderr -v 2
+ExecStart=/usr/bin/simple-proxy <BASIC_AUTH> -port <PORT> -logtostderr -v 2
 Restart=always
 RestartSec=3
 

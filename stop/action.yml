@@ -11,7 +11,8 @@ inputs:
     required: true
   gcp-credentials:
     description: 'GCP credentials'
-    required: true
+    required: false
+    default: ''
   gcp-instance-name:
     description: 'GCP instance name'
     required: true
@@ -20,6 +21,7 @@ runs:
   using: "composite"
   steps: 
     - name: Authenticate with GCP
+      if: inputs.gcp-credentials != ''
       shell: bash
       run: |
         gcloud auth activate-service-account --key-file=<(echo ${{ inputs.gcp-credentials }} | base64 -d)
@@ -35,7 +37,8 @@ runs:
             --project=$project \
             --zone=$zone
         
-        gcloud compute instances delete $instance_name \
+        gcloud -q compute instances delete $instance_name \
             --project=$project \
-            --zone=$zone
+            --zone=$zone \
+            --delete-disks=all
 

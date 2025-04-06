@@ -5,7 +5,7 @@ author: 'RamSeraph'
 inputs:
   gcp-zone:
     description: 'GCP zone to run proxy in'
-    required: required
+    required: true
   gcp-machine-type:
     description: 'Machine type'
     required: false
@@ -24,6 +24,10 @@ inputs:
     description: 'simple proxy version to use'
     required: false
     default: '1.2.0'
+  simpleproxy-basicauth:
+    description: 'simple proxy basic auth as username:password'
+    required: false
+    default: ''
   proxy-check-retry-delay:
     description: 'retry delay while checking proxy status'
     required: false
@@ -65,7 +69,12 @@ runs:
         proxy_version="${{ inputs.simpleproxy-version }}"
         proxy_port="${{ inputs.simpleproxy-port }}"
 
-        sed -e "s/<VERSION>/$proxy_version/g" -e "s/<PORT>/$proxy_port/g" ${GITHUB_ACTION_PATH}/startup.sh.tmpl > startup.sh 
+        basic_auth_str=''
+        if [[ "${{ inputs.simpleproxy-basicauth }}" != "" ]]; then
+          basic_auth_str='-basic-auth "${{ inputs.simpleproxy-basicauth }}"'
+        fi
+
+        sed -e "s/<VERSION>/$proxy_version/g" -e "s/<PORT>/$proxy_port/g" -e "s/<BASIC_AUTH>/$basic_auth_str/g" ${GITHUB_ACTION_PATH}/startup.sh.tmpl > startup.sh 
 
         gcloud compute instances create $instance_name\
             --project=$project \
