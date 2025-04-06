@@ -44,6 +44,9 @@ outputs:
   instance_name:
     description: 'name of the gcp instance created'
     value: ${{ steps.start-proxy.outputs.instance_name }}
+  fw_rule_name:
+    description: 'name of the gcp firewall rule created'
+    value: ${{ steps.start-proxy.outputs.fw_rule_name }}
 
 runs:
   using: "composite"
@@ -65,9 +68,11 @@ runs:
     - name: Setup Cleanup Hook
       if: always()
       uses: ramSeraph/gcp-simple-proxy-action/stop/stop_js@v0.0.2
+      uses: ./stop/stop_js
       with:
         gcp-zone: ${{ inputs.gcp-zone }}
         gcp-project: ${{ inputs.gcp-project }}
         gcp-instance-name: ${{ steps.start-proxy.outputs.instance_name }} 
+        gcp-fw-rule-name: ${{ steps.start-proxy.outputs.fw_rule_name }} 
 
 

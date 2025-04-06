@@ -12,6 +12,9 @@ inputs:
   gcp-instance-name:
     description: 'GCP instance to delete'
     required: true
+  gcp-fw-rule-name:
+    description: 'GCP firewall rule to delete'
+    required: true
 
 runs:
   using: node20

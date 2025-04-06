@@ -14,8 +14,9 @@ try {
   const gcpZone = core.getInput('gcp-zone');
   const gcpProject = core.getInput('gcp-project');
   const gcpInstanceName = core.getInput('gcp-instance-name');
+  const gcpFwRuleName = core.getInput('gcp-fw-rule-name');
 
-  run(`${action_dir}/stop/stop_js/stop.sh ${gcpZone} ${gcpProject} ${gcpInstanceName}`);
+  run(`${action_dir}/stop/stop_js/stop.sh "${gcpZone}" "${gcpProject}" "${gcpInstanceName}" "${gcpFwRuleName}"`);
 
 } catch (error) {
   core.setFailed(error.message);

@@ -44,6 +44,9 @@ outputs:
   instance_name:
     description: 'name of the gcp instance created'
     value: ${{ steps.start-proxy.outputs.instance_name }}
+  fw_rule_name:
+    description: 'name of the gcp firewall rule created'
+    value: ${{ steps.start-proxy.outputs.fw_rule_name }}
 
 
 runs:
@@ -61,6 +64,8 @@ runs:
         date_str=$(date +%s)
         instance_name="proxy-instance-$date_str"
         echo "instance_name=$instance_name" >> $GITHUB_OUTPUT 
+
+        tag_name="proxy-tag-$date_str"
 
         zone="${{ inputs.gcp-zone }}"
         project="${{ inputs.gcp-project }}"
@@ -86,7 +91,7 @@ runs:
             --provisioning-model=SPOT \
             --instance-termination-action=DELETE \
             --max-run-duration=86400s \
-            --tags=http-server \
+            --tags=$tag_name \
             --create-disk=auto-delete=yes,boot=yes,device-name=$instance_name,image=projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20250213,mode=rw,size=10,type=pd-balanced \
             --no-shielded-secure-boot \
             --shielded-vtpm \
@@ -99,6 +104,16 @@ runs:
         echo "ip_address=$ip_address" >> $GITHUB_OUTPUT 
 
         [[ $ip_address != "" ]] || exit 1
+
+        fw_rule_name="tcp-rule-$date_str"
+        echo "fw_rule_name=$fw_rule_name" >> $GITHUB_OUTPUT 
+
+        gcloud compute firewall-rules create $fw_rule_name \
+            --project=$project \
+            --allow=tcp:$proxy_port \
+            --direction=INGRESS \
+            --target-tags=$tag_name
+
 
     - name: Wait For Proxy
       shell: bash
