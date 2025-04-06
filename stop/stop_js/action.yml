@@ -1,0 +1,19 @@
+name: 'GCP-Simple-Proxy-Cleanup'
+description: 'Sub action to cleanup gcp instance'
+author: 'RamSeraph'
+
+inputs:
+  gcp-zone:
+    description: 'GCP zone to run proxy in'
+    required: true
+  gcp-project:
+    description: 'GCP project to use'
+    required: true
+  gcp-instance-name:
+    description: 'GCP instance to delete'
+    required: true
+
+runs:
+  using: node20
+  main: index.js
+  post: dist/index.js

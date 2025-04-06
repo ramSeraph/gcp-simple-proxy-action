@@ -1,0 +1,73 @@
+name: 'GCP-Run-Simple-Proxy'
+description: 'Run a simple-proxy instance on Google Cloud Platform'
+author: 'RamSeraph'
+
+inputs:
+  gcp-zone:
+    description: 'GCP zone to run proxy in'
+    required: true
+  gcp-machine-type:
+    description: 'Machine type'
+    required: false
+    default: 'e2-micro'
+  gcp-project:
+    description: 'GCP project to use'
+    required: true
+  gcp-credentials:
+    description: 'GCP credentials'
+    required: true
+  simpleproxy-port:
+    description: 'port to use for simple proxy'
+    required: false
+    default: 80
+  simpleproxy-version:
+    description: 'simple proxy version to use'
+    required: false
+    default: '1.2.0'
+  simpleproxy-basicauth:
+    description: 'simple proxy basic auth as username:password'
+    required: false
+    default: ''
+  proxy-check-retry-delay:
+    description: 'retry delay while checking proxy status'
+    required: false
+    default: 5
+  proxy-check-max-retries:
+    description: 'number of retries allowed while checking proxy status'
+    required: false
+    default: 50
+
+outputs:
+  ip_address:
+    description: 'ip address of the socks proxy'
+    value: ${{ steps.start-proxy.outputs.ip_address }}
+  instance_name:
+    description: 'name of the gcp instance created'
+    value: ${{ steps.start-proxy.outputs.instance_name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Start Proxy
+      id: start-proxy
+      uses: ./start
+      with:
+        gcp-zone: ${{ inputs.gcp-zone }}
+        gcp-machine-type: ${{ inputs.gcp-machine-type }}
+        gcp-project: ${{ inputs.gcp-project }}
+        gcp-credentials: ${{ inputs.gcp-credentials }}
+        simpleproxy-port: ${{ inputs.simpleproxy-port }}
+        simpleproxy-version: ${{ inputs.simpleproxy-version }}
+        simpleproxy-basicauth: ${{ inputs.simpleproxy-basicauth }}
+        proxy-check-retry-delay: ${{ inputs.proxy-check-retry-delay }}
+        proxy-check-max-retries: ${{ inputs.proxy-check-max-retries }}
+
+    - name: Setup Cleanup Hook
+      if: always()
+      uses: ./stop/stop_js
+      with:
+        gcp-zone: ${{ inputs.gcp-zone }}
+        gcp-project: ${{ inputs.gcp-project }}
+        gcp-instance-name: ${{ steps.start-proxy.outputs.instance_name }} 
+
+

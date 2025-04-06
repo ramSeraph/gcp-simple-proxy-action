@@ -29,16 +29,5 @@ runs:
     - name: Stop
       shell: bash
       run: |
-        instance_name="${{ inputs.gcp-instance-name }}"
-        project="${{ inputs.gcp-project }}"
-        zone="${{ inputs.gcp-zone }}"
-
-        gcloud compute instances stop $instance_name \
-            --project=$project \
-            --zone=$zone
-        
-        gcloud -q compute instances delete $instance_name \
-            --project=$project \
-            --zone=$zone \
-            --delete-disks=all
+        ${GITHUB_ACTION_PATH}/stop_js/stop.sh "${{ inputs.gcp-zone }}" "${{ inputs.gcp-project }}" "${{ inputs.gcp-instance-name }}"
 
