@@ -50,7 +50,7 @@ runs:
   steps:
     - name: Start Proxy
       id: start-proxy
-      uses: ./start
+      uses: ramSeraph/gcp-simple-proxy-action/start@v0.0.2
       with:
         gcp-zone: ${{ inputs.gcp-zone }}
         gcp-machine-type: ${{ inputs.gcp-machine-type }}
@@ -64,7 +64,7 @@ runs:
 
     - name: Setup Cleanup Hook
       if: always()
-      uses: ./stop/stop_js
+      uses: ramSeraph/gcp-simple-proxy-action/stop/stop_js@v0.0.2
       with:
         gcp-zone: ${{ inputs.gcp-zone }}
         gcp-project: ${{ inputs.gcp-project }}
